@@ -25,6 +25,8 @@ static ENCLAVE_FILE: &'static str = "enclave.signed.so";
 extern {
     fn say_something(eid: sgx_enclave_id_t, retval: *mut sgx_status_t,
                      some_string: *const u8, len: usize) -> sgx_status_t;
+    fn foo(eid: sgx_enclave_id_t, retval: *mut usize,
+           val: u32) -> sgx_status_t;
 }
 
 fn init_enclave() -> SgxResult<SgxEnclave> {
@@ -70,5 +72,25 @@ fn main() {
         }
     }
     println!("[+] say_something success...");
+
+    let foo_input: u32 = 123;
+    let mut foo_ret: usize = 0;
+
+    let result = unsafe {
+        foo(enclave.geteid(),
+            &mut foo_ret as * mut usize,
+            foo_input)
+    };
+
+    match result {
+        sgx_status_t::SGX_SUCCESS => {},
+        _ => {
+            println!("[-] ECALL Enclave Failed {}!", result.as_str());
+            return;
+        }
+    }
+    
+    println!("foo returns {}", foo_ret);
+
     enclave.destroy();
 }
